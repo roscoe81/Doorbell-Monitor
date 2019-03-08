@@ -12,4 +12,5 @@ Interfacing
 Images of the interface schematics are included in this repository, as are a few photographs of the hardware during various phases of repackaging.
 
 License
+
 This project is licensed under the MIT License - see the LICENSE.md file for details
