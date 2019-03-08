@@ -9,4 +9,4 @@ In addition to the mode setting buttons and indicators, an mqtt interface is pro
 A separate project (Home Manager) utilises that mqtt interface as part of a broader home automation project and will be published at a later date.
 
 Interfacing
-Images of the interface schematics are included in this repository, as are a few photographs of the hardware druing various phases of repackaging.
+Images of the interface schematics are included in this repository, as are a few photographs of the hardware during various phases of repackaging.
