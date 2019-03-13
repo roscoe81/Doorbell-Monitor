@@ -6,7 +6,7 @@ b) Manual Mode: Places a Video SIP call to your mobile phone so that you can see
 c) Idle Mode: Normal door station functions take place.
 In all modes, a photo of the caller is taken and stored for later reference, as well as a pushover message that contains the photo. There is also the option to only allow Auto mode during certain hours of the day and days of the week and to disable auto mode if the apartment's door is open.
 In addition to the mode setting buttons and indicators, an mqtt interface is provided to allow remote mode setting and to open the door manually.
-A separate project (Home Manager) utilises that mqtt interface as part of a broader home automation project and will be published at a later date.
+A separate project (Home Manager) utilises that mqtt interface to control this monitor as part of a broader home automation project is posted here https://github.com/roscoe81/Home-Manager
 
 Interfacing
 Images of the interface schematics are included in this repository, as are a few photographs of the hardware during various phases of repackaging.
