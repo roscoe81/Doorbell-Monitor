@@ -25,7 +25,6 @@ A separate project ([Home Manager](https://github.com/roscoe81/Home-Manager)) ut
 ### Final Packaging
 ![Final Packaging](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/IMG_3065.png)
 
-
-License
+## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
