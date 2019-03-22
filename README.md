@@ -1,15 +1,30 @@
 # Doorbell-Monitor
 Provides doorbell automation for a Fermax 4 + N Electronic Door Entry System 
 This project uses a Raspberry Pi to:
-a) Auto Mode: Play a recoded message and open the door so that deliveries can be left in a secure location
-b) Manual Mode: Places a Video SIP call to your mobile phone so that you can see the person at the door and converse with them
-c) Idle Mode: Normal door station functions take place.
+* Auto Mode: Play a recoded message and open the door so that deliveries can be left in a secure location
+* Manual Mode: Places a Video SIP call to your mobile phone so that you can see the person at the door and converse with them
+* Idle Mode: Normal door station functions take place.
 In all modes, a photo of the caller is taken and stored for later reference, as well as a pushover message that contains the photo. There is also the option to only allow Auto mode during certain hours of the day and days of the week and to disable auto mode if the apartment's door is open.
-In addition to the mode setting buttons and indicators, an mqtt interface is provided to allow remote mode setting and to open the door manually.
-A separate project (Home Manager) utilises that mqtt interface to control this monitor as part of a broader home automation project is posted here https://github.com/roscoe81/Home-Manager
 
-Interfacing
-Images of the interface schematics are included in this repository, as are a few photographs of the hardware during various phases of repackaging.
+In addition to the mode setting buttons and indicators, an mqtt interface is provided to allow remote mode setting and to open the door manually.
+
+A separate project ([Home Manager](https://github.com/roscoe81/Home-Manager)) utilises that mqtt interface to control this monitor as part of a broader home automation project.
+
+## Hardware Schematics
+### Main Schematic
+![Main Schematic](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/Doorbell%202_schem.png)
+
+### Switches and Indicators Schematic
+![Switches and Indicators](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/Doorbell%20Switches_Indicators_schem.png)
+
+## Hardware Prototyping and Packaging
+### Breadboard
+![Breadboard](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/IMG_3064.png)
+### Initial Packaging
+![Initial Packaging](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/IMG_1352.png)
+### Final Packaging
+![Final Packaging](https://github.com/roscoe81/Doorbell-Monitor/blob/master/Schematics%20and%20Photos/IMG_3065.png)
+
 
 License
 
