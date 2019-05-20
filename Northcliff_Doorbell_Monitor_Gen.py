@@ -1,5 +1,5 @@
-# Northcliff Doorbell Monitor Version 2.0 with no setup data
 #!/usr/bin/env python3
+# Northcliff Doorbell Monitor Version 1.11 GEN - Add optional heartbeat
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -12,6 +12,7 @@ from threading import Thread
 import paho.mqtt.client as mqtt
 import struct
 import json
+import os
 
 class ThreeLedFlash(object): # The class for the LED flashing thread
     def __init__(self, cycle_duration, cycle_count):
@@ -58,7 +59,7 @@ class ThreeLedFlash(object): # The class for the LED flashing thread
 class NorthcliffDoorbellMonitor(object): # The class for the main door monitor program
     def __init__(self, pushover_in_manual_mode, full_video, ask_for_auto_time_input, active_auto_start, active_auto_finish, disable_weekend,
                  manual_mode_call_sip_address, pushover_token, pushover_user, linphone_debug_log_file, auto_message_file,
-                 auto_video_capture_directory, linphone_config_file, auto_on_startup, linphone_in_manual_mode):
+                 auto_video_capture_directory, linphone_config_file, auto_on_startup, linphone_in_manual_mode, heartbeat_enabled):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         # Set up the non-LED GPIO ports
@@ -91,6 +92,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.pushover_in_manual_mode = pushover_in_manual_mode
         self.auto_on_startup = auto_on_startup
         self.linphone_in_manual_mode = linphone_in_manual_mode
+        self.heartbeat_enabled = heartbeat_enabled
         if full_video == True:
             self.linphone_video_parameter = "V"
             print("Full Video Mode")
@@ -110,6 +112,8 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.client.subscribe('DoorbellButton')
         self.disable_doorbell_ring_sensor = False # Enable doorbell ring sensor
         self.entry_door_open = False
+        self.heartbeat_count = 0
+        self.no_heartbeat_ack = False
 
     def on_connect(self, client, userdata, flags, rc):
         time.sleep(1)
@@ -135,7 +139,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.activated_mode_enabled = True
         if self.linphone_in_manual_mode == True:
             self.stop_linphone()
-        #self.print_status("Doorbell Monitor Idle on ")
+        self.print_status("Doorbell Monitor Idle on ")
         self.update_status()
 
     def auto_mode_startup(self):
@@ -145,7 +149,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         else:
             self.FlashLeds.auto_led_on_count = 10 # 50% LED Flash
         self.FlashLeds.led_counter = 0
-        #self.print_status("Doorbell Monitor Auto Answer on ")
+        self.print_status("Doorbell Monitor Auto Answer on ")
         if self.linphone_in_manual_mode == True:
             self.stop_linphone()
         self.update_status()
@@ -160,7 +164,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         else: # Manual Mode has been invoked in out of hours auto mode
             self.FlashLeds.auto_led_on_count = 1 # Short LED Flash to indicate that it's in manual mode because the time is outside auto being possible
         self.FlashLeds.led_counter = 0
-        #self.print_status("Doorbell Monitor Manual Answer on ")
+        self.print_status("Doorbell Monitor Manual Answer on ")
         if self.linphone_in_manual_mode == True:
             self.start_linphone()
         self.update_status()
@@ -184,6 +188,9 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.send_pushover_message(self.pushover_token, self.pushover_user, "Second Auto Mode picture capture", "magic")
             self.ringing = False
             self.update_status()
+        else:
+            self.process_home_manager_heartbeat()
+            time.sleep(0.05)
 
     def play_message(self):
         print("Playing message")
@@ -267,6 +274,9 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                 self.send_pushover_message(self.pushover_token, self.pushover_user, "Doorbell rang while in manual mode", "bugle")
             self.ringing = False
             self.update_status()
+        else:
+            self.process_home_manager_heartbeat()
+            time.sleep(0.05)
 
     def start_linphone(self):
         print('Starting Linphone')
@@ -292,6 +302,8 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                 self.update_status()
             elif parsed_json['service'] == 'DoorStatusChange':
                 self.process_door_status_change(parsed_json)
+            elif parsed_json['service'] == 'Heartbeat Ack':
+                self.heartbeat_ack()
             else:
                 print('invalid button')
 
@@ -321,14 +333,19 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         if parsed_json['door'] == 'Entry Door':
             if parsed_json['new_door_state'] == 1: # If the door is now open
                 self.entry_door_open = True
-                #self.print_status("Entry Door Opened. Automatic Answer Not Possible on ")
+                self.print_status("Entry Door Opened. Automatic Answer Not Possible on ")
             else: # If the door is now closed
                 self.entry_door_open = False
-                #self.print_status("Entry Door Closed. Automatic Answer Now Possible if in hours on ")
+                self.print_status("Entry Door Closed. Automatic Answer Now Possible if in hours on ")
             self.update_status()
 
+    def heartbeat_ack(self):
+        self.print_status('Heartbeat received from Home Manager on ')
+        self.heartbeat_count = 0
+        self.no_heartbeat_ack = False
+
     def update_status(self): #Send status to Homebridge Manager
-        self.status = json.dumps({'Activated': self.activated_mode_enabled, 'Automatic': self.auto_mode_enabled, 'AutoPossible': self.auto_possible(), 'Manual': self.manual_mode_enabled, 'Triggered': self.triggered, 'Terminated': self.shutdown, 'Ringing': self.ringing})
+        self.status = json.dumps({'service': 'Status Update', 'Activated': self.activated_mode_enabled, 'Automatic': self.auto_mode_enabled, 'AutoPossible': self.auto_possible(), 'Manual': self.manual_mode_enabled, 'Triggered': self.triggered, 'Terminated': self.shutdown, 'Ringing': self.ringing})
         self.client.publish("DoorbellStatus", self.status)
 
     def idle_mode(self):
@@ -346,9 +363,13 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.update_status()
             print("Updating Ring Status False")
         else:
+            self.process_home_manager_heartbeat()
             time.sleep(0.05)
 
     def shutdown_cleanup(self):
+        # Shutdown LED flashing thread
+        self.FlashLeds.flash_leds = False
+        self.FlashLeds.terminate()
         GPIO.cleanup()
         if self.linphone_in_manual_mode == True:
             self.stop_linphone()
@@ -364,6 +385,27 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.update_status()
         self.client.loop_stop() # Stop mqtt monitoring thread
         
+    def process_home_manager_heartbeat(self):
+        if self.heartbeat_enabled == True:
+            self.heartbeat_count +=1
+            if self.heartbeat_count == 2400:
+                self.print_status('Sending Heartbeat to Home Manager on ')
+                self.send_heartbeat_to_home_manager()
+            if self.heartbeat_count > 3200:
+                self.print_status('Home Manager Heartbeat Lost. Restarting code on ')
+                self.no_heartbeat_ack = True
+                self.shutdown_cleanup()
+                time.sleep(10)
+                self.restart_code()
+            
+    def send_heartbeat_to_home_manager(self):
+        self.client.publish('DoorbellStatus', '{"service": "Heartbeat"}')
+        
+    def restart_code(self):
+        self.client.publish('DoorbellStatus', '{"service": "Restart"}')
+        self.shutdown_cleanup()
+        os.system('sudo reboot')
+                            
     def run(self):
         self.led_cycle_duration = 0.05
         self.led_cycle_count = 20
@@ -395,15 +437,16 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             if self.auto_on_startup == True:
                 self.process_auto_button(self.auto_button)
             while True: # Run Doorbell Monitor in continuous loop
+                time.sleep(0.5)
                 if self.auto_mode_enabled == True and self.auto_possible() == True:
                     self.auto_mode_startup()
                     while self.auto_mode_enabled == True and self.auto_possible() == True:
                         self.auto_mode()
                 elif self.auto_mode_enabled == True and self.auto_possible() == False:
-                    #if self.entry_door_open == False:
-                        #self.print_status("Auto Mode not possible due to out of hours setting. Going into Manual Mode on ")
-                    #else:
-                        #self.print_status("Auto Mode not possible due to Entry Door opening. Going into Manual Mode on ")
+                    if self.entry_door_open == False:
+                        self.print_status("Auto Mode not possible due to out of hours setting. Going into Manual Mode on ")
+                    else:
+                        self.print_status("Auto Mode not possible due to Entry Door opening. Going into Manual Mode on ")
                     self.manual_mode_startup(normal_manual_flash = False) # Change LED Flashing in manual_mode_startup to indicate that auto has been disabled due to out of hours
                     while self.auto_mode_enabled == True and self.auto_possible() == False:
                         self.manual_mode()
@@ -415,9 +458,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                     self.idle_mode()
 
         except KeyboardInterrupt: # Shutdown on ctrl C
-            # Shutdown LED flashing thread
-            self.FlashLeds.flash_leds = False
-            self.FlashLeds.terminate()
             # Shutdown main program
             self.shutdown_cleanup()
             
@@ -426,7 +466,8 @@ if __name__ == '__main__': # This is where to overall code kicks off
                                         active_auto_finish = 19, disable_weekend = True, manual_mode_call_sip_address = "<Your SIP Address Here>",
                                         pushover_token = "<Your Pushover Token Here>",
                                         linphone_debug_log_file = "<Your linphone debug log file location here>", auto_message_file = "<Your auto message file location here>",
-                                        auto_video_capture_directory = "<Your video capture directory location here>", linphone_config_file = "<Your linphone config file location here>", auto_on_startup = True, linphone_in_manual_mode = True)
+                                        auto_video_capture_directory = "<Your video capture directory location here>", linphone_config_file = "<Your linphone config file location here>",
+                                        auto_on_startup = True, linphone_in_manual_mode = True, heartbeat_enabled = True)
     monitor.run()
         
 
