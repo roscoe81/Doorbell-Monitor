@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 1.11 GEN - Add optional heartbeat
+# Northcliff Doorbell Monitor Version 1.12 GEN - Add optional heartbeat
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -464,7 +464,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
 if __name__ == '__main__': # This is where to overall code kicks off
     monitor = NorthcliffDoorbellMonitor(pushover_in_manual_mode = True, full_video = False, ask_for_auto_time_input = False, active_auto_start = 7,
                                         active_auto_finish = 19, disable_weekend = True, manual_mode_call_sip_address = "<Your SIP Address Here>",
-                                        pushover_token = "<Your Pushover Token Here>",
+                                        pushover_token = "<Your Pushover Token Here>", pushover_user = "<Your Pushover User Here>",
                                         linphone_debug_log_file = "<Your linphone debug log file location here>", auto_message_file = "<Your auto message file location here>",
                                         auto_video_capture_directory = "<Your video capture directory location here>", linphone_config_file = "<Your linphone config file location here>",
                                         auto_on_startup = True, linphone_in_manual_mode = True, heartbeat_enabled = True)
