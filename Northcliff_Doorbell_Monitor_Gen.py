@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 2.1 GEN
+# Northcliff Doorbell Monitor Version 2.2 GEN
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -77,7 +77,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.idle_mode_enabled = True
         self.manual_mode_enabled = False
         self.auto_mode_enabled = False
-        self.previous_auto_possible = False
         self.triggered = False
         self.shutdown = False
         self.ringing = False
@@ -108,7 +107,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.client = mqtt.Client('doorbell') # Create new instance of mqtt Class
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.connect("<Your mqtt Broker Here", 1883, 60) # Connect to mqtt broker
+        self.client.connect("<Your mqtt Broker Here>", 1883, 60) # Connect to mqtt broker
         self.client.loop_start() # Start mqtt monitor thread
         self.client.subscribe('DoorbellButton')
         self.disable_doorbell_ring_sensor = False # Enable doorbell ring sensor
@@ -148,7 +147,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.idle_mode_enabled = False
             self.manual_mode_enabled = True
             self.auto_mode_enabled = False
-            self.manual_mode_startup(True)
+            self.manual_mode_startup(normal_manual_flash = True)
         else:
             self.manual_mode_enabled = False
             self.idle_mode_enabled = True
@@ -161,7 +160,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.idle_mode_enabled = False
             self.auto_mode_enabled = True
             self.manual_mode_enabled = False
-            self.auto_mode_startup()
+            self.auto_mode_attempt = True
         else:
             self.auto_mode_enabled = False
             self.idle_mode_enabled = True
@@ -431,25 +430,31 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         else:
             print ("Active Auto Mode Start at " + str(self.active_auto_start) + ":00 Hours, Active Auto Mode Finish at " + str(self.active_auto_finish)
                    + ":00 Hours, Auto Mode Enabled on Weekends")
+        self.previous_auto_possible = True
+        self.idle_mode_startup()
+        self.auto_mode_attempt = False
+        if self.auto_on_startup == True:
+            self.process_auto_button(self.auto_button)
+            self.auto_mode_startup()
         try:
-            self.idle_mode_startup()
-            if self.auto_on_startup == True:
-                self.process_auto_button(self.auto_button)
             while True: # Run Doorbell Monitor in continuous loop
-                if self.auto_mode_enabled == True and self.auto_possible() == True:
-                    if self.previous_auto_possible == False:
+                self.current_auto_possible = self.auto_possible()
+                if self.auto_mode_enabled == True and self.current_auto_possible == True:
+                    if self.previous_auto_possible == False or self.auto_mode_attempt == True:
+                        self.auto_mode_attempt = False
                         self.auto_mode_startup()
-                        self.previous_auto_possible = True
                     self.auto_mode()
-                elif self.auto_mode_enabled == True and self.auto_possible() == False:
-                    if self.previous_auto_possible == True:
+                elif self.auto_mode_enabled == True and self.current_auto_possible == False:
+                    if self.previous_auto_possible == True or self.auto_mode_attempt == True:
+                        self.auto_mode_attempt = False
                         self.manual_mode_startup(normal_manual_flash = False) # Change LED Flashing in manual_mode_startup to indicate that auto has been disabled due to out of hours or door opening
-                        self.previous_auto_possible = False
                     self.manual_mode()
                 elif self.manual_mode_enabled == True:
                     self.manual_mode()
                 else:
                     self.idle_mode()
+                self.previous_auto_possible = self.current_auto_possible
+                self.startup_phase = False
                 self.process_home_manager_heartbeat()
                 time.sleep(0.1)
 	            
