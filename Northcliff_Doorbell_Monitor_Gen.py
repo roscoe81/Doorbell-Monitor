@@ -454,7 +454,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                 else:
                     self.idle_mode()
                 self.previous_auto_possible = self.current_auto_possible
-                self.startup_phase = False
                 self.process_home_manager_heartbeat()
                 time.sleep(0.1)
 	            
