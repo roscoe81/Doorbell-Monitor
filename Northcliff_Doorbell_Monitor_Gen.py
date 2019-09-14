@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 2.2 GEN
+# Northcliff Doorbell Monitor Version 2.3 GEN
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -143,6 +143,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
     def process_manual_button(self, channel):
         self.print_status("Manual Button Pressed on ")
         self.triggered =  False
+        self.ringing = False
         if self.manual_mode_enabled == False:
             self.idle_mode_enabled = False
             self.manual_mode_enabled = True
@@ -156,6 +157,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
     def process_auto_button(self, channel):
         self.print_status("Auto Button Pressed on ")
         self.triggered = False
+        self.ringing = False
         if self.auto_mode_enabled == False:
             self.idle_mode_enabled = False
             self.auto_mode_enabled = True
@@ -177,7 +179,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.update_status()
 
     def heartbeat_ack(self):
-        self.print_status('Heartbeat received from Home Manager on ')
+        #self.print_status('Heartbeat received from Home Manager on ')
         self.heartbeat_count = 0
         self.no_heartbeat_ack = False
 
@@ -241,12 +243,11 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.ringing = True
             print("Updating Ring Status True")
             self.update_status()
-            time.sleep(5)
+            self.ringing = False
+            time.sleep(2)
             self.capture_video()
             self.push_picture = True # Attach a picture
             self.send_pushover_message(self.pushover_token, self.pushover_user, "Doorbell is ringing while in idle mode", "magic")
-            time.sleep(20)
-            self.ringing = False
             self.update_status()
         
     def auto_mode(self):
@@ -258,7 +259,8 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.triggered = True
             self.ringing = True
             self.update_status()
-            time.sleep(5)
+            self.ringing = False
+            time.sleep(2)
             self.capture_video() # Capture picture before door opens
             self.play_message()
             self.push_picture = True # Tells Pushover to send a picture
@@ -266,7 +268,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.send_pushover_message(self.pushover_token, self.pushover_user, "Doorbell is ringing while in auto mode", "updown")
             self.capture_video() # Capture picture after door opens
             self.send_pushover_message(self.pushover_token, self.pushover_user, "Second Auto Mode picture capture", "magic")
-            self.ringing = False
             self.update_status()
             
     def manual_mode(self):
@@ -277,7 +278,8 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.triggered = True
             self.ringing = True
             self.update_status()
-            time.sleep(5)
+            self.ringing = False
+            time.sleep(2)
             self.capture_video()          
             if self.linphone_in_manual_mode == True:
                 print("Calling Linphone")
@@ -289,7 +291,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                 print("Sending Pushover Message")
                 self.push_picture = True # Attach a picture
                 self.send_pushover_message(self.pushover_token, self.pushover_user, "Doorbell rang while in manual mode", "bugle")
-            self.ringing = False
             self.update_status()
 
     def play_message(self):
@@ -387,7 +388,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         if self.heartbeat_enabled == True:
             self.heartbeat_count +=1
             if self.heartbeat_count == 3000:
-                self.print_status('Sending Heartbeat to Home Manager on ')
+                #self.print_status('Sending Heartbeat to Home Manager on ')
                 self.send_heartbeat_to_home_manager()
             if self.heartbeat_count > 4500:
                 self.print_status('Home Manager Heartbeat Lost. Restarting code on ')
