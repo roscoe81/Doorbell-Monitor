@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 2.3 GEN
+# Northcliff Doorbell Monitor Version 2.4 GEN
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -244,7 +244,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             print("Updating Ring Status True")
             self.update_status()
             self.ringing = False
-            time.sleep(2)
+            time.sleep(2.5)
             self.capture_video()
             self.push_picture = True # Attach a picture
             self.send_pushover_message(self.pushover_token, self.pushover_user, "Doorbell is ringing while in idle mode", "magic")
@@ -260,7 +260,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.ringing = True
             self.update_status()
             self.ringing = False
-            time.sleep(2)
+            time.sleep(2.5)
             self.capture_video() # Capture picture before door opens
             self.play_message()
             self.push_picture = True # Tells Pushover to send a picture
@@ -279,7 +279,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
             self.ringing = True
             self.update_status()
             self.ringing = False
-            time.sleep(2)
+            time.sleep(2.5)
             self.capture_video()          
             if self.linphone_in_manual_mode == True:
                 print("Calling Linphone")
