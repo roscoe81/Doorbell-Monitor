@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 2.4 GEN
+# Northcliff Doorbell Monitor Version 2.5 GEN - Support IOS 13
+# Requires Home Manager >= V8.5
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
@@ -107,7 +108,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.client = mqtt.Client('doorbell') # Create new instance of mqtt Class
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.connect("<Your mqtt Broker Here>", 1883, 60) # Connect to mqtt broker
+        self.client.connect("<mqtt broker name>", 1883, 60) # Connect to mqtt broker
         self.client.loop_start() # Start mqtt monitor thread
         self.client.subscribe('DoorbellButton')
         self.disable_doorbell_ring_sensor = False # Enable doorbell ring sensor
@@ -129,11 +130,11 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
                 self.process_auto_button(self.auto_button)
             elif parsed_json['service'] == 'Manual':
                 self.process_manual_button(self.manual_button)
-            elif parsed_json['service'] == 'OpenDoor':
+            elif parsed_json['service'] == 'Open Door':
                 self.open_and_close_door()
-            elif parsed_json['service'] == 'UpdateStatus':
+            elif parsed_json['service'] == 'Update Status':
                 self.update_status()
-            elif parsed_json['service'] == 'DoorStatusChange':
+            elif parsed_json['service'] == 'Door Status Change':
                 self.process_door_status_change(parsed_json)
             elif parsed_json['service'] == 'Heartbeat Ack':
                 self.heartbeat_ack()
@@ -184,7 +185,8 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.no_heartbeat_ack = False
 
     def update_status(self): #Send status to Homebridge Manager
-        self.status = json.dumps({'service': 'Status Update', 'Idle': self.idle_mode_enabled, 'Automatic': self.auto_mode_enabled, 'AutoPossible': self.auto_possible(), 'Manual': self.manual_mode_enabled, 'Triggered': self.triggered, 'Terminated': self.shutdown, 'Ringing': self.ringing})
+        self.status = json.dumps({'service': 'Status Update', 'Idle': self.idle_mode_enabled, 'Automatic': self.auto_mode_enabled, 'Auto Possible': self.auto_possible(), 'Manual': self.manual_mode_enabled,
+                                  'Triggered': self.triggered, 'Terminated': self.shutdown, 'Ringing': self.ringing})
         self.client.publish("DoorbellStatus", self.status)
         
     def print_status(self, print_message):
