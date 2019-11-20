@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Northcliff Doorbell Monitor Version 2.5 GEN - Support IOS 13
+# Northcliff Doorbell Monitor Version 2.6 GEN
 # Requires Home Manager >= V8.5
 import RPi.GPIO as GPIO
 import time
@@ -110,7 +110,6 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
         self.client.on_message = self.on_message
         self.client.connect("<mqtt broker name>", 1883, 60) # Connect to mqtt broker
         self.client.loop_start() # Start mqtt monitor thread
-        self.client.subscribe('DoorbellButton')
         self.disable_doorbell_ring_sensor = False # Enable doorbell ring sensor
         self.entry_door_open = False
         self.heartbeat_count = 0
@@ -120,6 +119,7 @@ class NorthcliffDoorbellMonitor(object): # The class for the main door monitor p
     def on_connect(self, client, userdata, flags, rc):
         time.sleep(1)
         self.print_status("Connected to mqtt server with result code "+str(rc)+" on ")
+        self.client.subscribe('DoorbellButton')
         
     def on_message(self, client, userdata, msg): #Process mqtt messages
         decoded_payload = str(msg.payload.decode('utf-8'))
